@@ -1,0 +1,7 @@
+google-auth==2.30.0
+google-api-core==2.19.1
+google-api-python-client==2.134.0
+gspread==6.1.2
+oauth2client==4.1.3
+requests==2.32.3
+vertexai
