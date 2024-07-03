@@ -1,3 +1,6 @@
+link for google spreadsheet: https://docs.google.com/spreadsheets/d/1zAol75kWfjgfMMfS9FjsdRpfMwsXBIJnngkaYseBa-Q/edit?usp=sharing
+
+
 pip install -r requirement.txt
 
 
