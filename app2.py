@@ -28,7 +28,7 @@ sheet = client.open('Java').sheet1  # Replace with the actual name of your Googl
 # Fetch data from the Google Sheet
 questions = sheet.col_values(1)  # Assuming questions are in the first column
 correct_answers = sheet.col_values(2)  # Assuming correct answers are in the second column
-user_answers = sheet.col_values(3)  # Assuming user answers are in the third column
+user_answers = sheet.col_values(4)  # Assuming user answers are in the third column
 
 # Function to generate feedback with retry mechanism
 def generate_feedback(prompt, retries=2, delay=60):
@@ -75,8 +75,8 @@ for i in range(1, len(user_answers)):  # Assuming the first row is the header
     if feedback:
         score = extract_score(feedback)
        
-        sheet.update_cell(i + 1, 6, score)  # Assuming scores go in the 4th column
-        sheet.update_cell(i + 1, 7, feedback)  # Assuming feedback goes in the 5th column
+        sheet.update_cell(i + 1, 8, score)  # Assuming scores go in the 4th column
+        sheet.update_cell(i + 1, 9, feedback)  # Assuming feedback goes in the 5th column
 
         print(f"Question: {question}")
         print(f"Score: {score}")
