@@ -4,6 +4,7 @@ from vertexai.generative_models import GenerativeModel
 import gspread
 from google.oauth2.service_account import Credentials
 from google.api_core.exceptions import ResourceExhausted
+import re
 
 # Set up the Vertex AI environment
 vertexai.init(project='warm-torus-427502-j7', location='us-central1')
@@ -27,7 +28,7 @@ sheet = client.open('Java').sheet1  # Replace with the actual name of your Googl
 # Fetch data from the Google Sheet
 questions = sheet.col_values(1)  # Assuming questions are in the first column
 correct_answers = sheet.col_values(2)  # Assuming correct answers are in the second column
-user_answers = sheet.col_values(4)  # Assuming user answers are in the third column
+user_answers = sheet.col_values(3)  # Assuming user answers are in the third column
 
 # Function to generate feedback with retry mechanism
 def generate_feedback(prompt, retries=2, delay=60):
@@ -43,6 +44,11 @@ def generate_feedback(prompt, retries=2, delay=60):
                 print("Max retries exceeded. Please check your quota.")
                 return None
 
+# Function to extract score from feedback
+def extract_score(feedback):
+    match = re.search(r'\b\d{1,2}\b', feedback)
+    return int(match.group()) if match else None
+
 # Iterate through the answers and generate feedback
 for i in range(1, len(user_answers)):  # Assuming the first row is the header
     question = questions[i]
@@ -53,13 +59,25 @@ for i in range(1, len(user_answers)):  # Assuming the first row is the header
         f"Question: {question}\n"
         f"User Answer: {user_answer}\n"
         f"Correct Answer: {correct_answer}\n\n"
-        "Evaluate the user's answer compared to the correct answer and give score(out of 10) and also provide suggestions for improvement"
-        
+        "Evaluate the user's answer compared to the correct answer and give a score out of 10. Strictly follow these guidelines:\n"
+        "1. For a fully correct answer (all key parts are there), give a score of 7 to 10.\n"
+        "2. For a mostly correct answer with small mistakes or missing parts, give a score of 5 to 6.\n"
+        "3. For a partially correct answer (many key parts missing), give a score of 3 to 5.\n"
+        "4. For an answer that's mostly wrong but has some correct parts, give a score of 1 to 2.\n"
+        "5. For a completely wrong answer, give a score of 0 to 1.\n"
+        "Provide detailed feedback and suggestions for improvement, explaining why you gave the score."
     )
+
+
+
 
     feedback = generate_feedback(prompt)
     if feedback:
+        score = extract_score(feedback)
+       
+        sheet.update_cell(i + 1, 6, score)  # Assuming scores go in the 4th column
+        sheet.update_cell(i + 1, 7, feedback)  # Assuming feedback goes in the 5th column
+
         print(f"Question: {question}")
-        # print(f"User Answer: {user_answer}")
-        # print(f"Correct Answer: {correct_answer}")
+        print(f"Score: {score}")
         print(f"Feedback: {feedback}\n")
