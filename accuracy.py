@@ -42,13 +42,22 @@ def calculate_ratio_for_column(sheet, column_index, min_value, max_value):
     return count_in_range, total_values, ratio
 
 def main():
-    # Calculate for 6th column (index 5), values between 4 and 6
-    count_6th, total_6th, ratio_6th = calculate_ratio_for_column(sheet, 5, 4, 6)
-    print(f'For Partial Correct: Score between 4 and 6: {count_6th}, Total number of values: {total_6th}, Accuracy: {ratio_6th}')
+    # Calculate for partial column (index 5), values between 4 and 6
+    count_partial, total_partial, ratio_partial = calculate_ratio_for_column(sheet, 8, 4, 6)
+    print(f'For Partial Correct: Score between 4 and 6: {count_partial}, Total number of values: {total_partial}, Accuracy: {ratio_partial}')
 
-    # Calculate for 8th column (index 7), values between 0 and 3
-    count_8th, total_8th, ratio_8th = calculate_ratio_for_column(sheet, 7, 0, 3)
-    print(f'For Wrong answer: Score between 0 and 3: {count_8th}, Total number of values: {total_8th}, Accuracy: {ratio_8th}')
+    # Calculate for wrong column (index 7), values between 0 and 3
+    count_wrong, total_wrong, ratio_wrong = calculate_ratio_for_column(sheet, 10, 0, 3)
+    print(f'For Wrong answer: Score between 0 and 3: {count_wrong}, Total number of values: {total_wrong}, Accuracy: {ratio_wrong}')
+
+
+    count_correct, total_correct, ratio_correct = calculate_ratio_for_column(sheet, 6, 7, 10)
+    print(f'For Correct answer: Score between 7 and 10: {count_correct}, Total number of values: {total_correct}, Accuracy: {ratio_correct}')
+
+    # Calculate the average ratio
+    ratios = [ratio_partial, ratio_wrong, ratio_correct]
+    average_ratio = np.mean(ratios)
+    print(f'Average Accuracy: {average_ratio}')
 
 if __name__ == "__main__":
     main()
