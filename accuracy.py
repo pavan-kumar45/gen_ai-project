@@ -43,7 +43,7 @@ def calculate_ratio_for_column(sheet, column_index, min_value, max_value):
 
 def main():
     # Calculate for partial column (index 5), values between 4 and 6
-    count_partial, total_partial, ratio_partial = calculate_ratio_for_column(sheet, 8, 4, 6)
+    count_partial, total_partial, ratio_partial = calculate_ratio_for_column(sheet, 8, 4, 7)
     print(f'For Partial Correct: Score between 4 and 6: {count_partial}, Total number of values: {total_partial}, Accuracy: {ratio_partial}')
 
     # Calculate for wrong column (index 7), values between 0 and 3

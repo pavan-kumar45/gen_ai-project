@@ -5,6 +5,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from google.api_core.exceptions import ResourceExhausted
 import re
+from prompts import theory_prompt_template, coding_prompt_template  # Import the prompts
 
 # Set up the Vertex AI environment
 vertexai.init(project='warm-torus-427502-j7', location='us-central1')
@@ -28,7 +29,7 @@ sheet = client.open('Java').sheet1  # Replace with the actual name of your Googl
 # Fetch data from the Google Sheet
 questions = sheet.col_values(1)  # Assuming questions are in the first column
 correct_answers = sheet.col_values(2)  # Assuming correct answers are in the second column
-user_answers = sheet.col_values(5)  # Assuming user answers are in the third column
+user_answers = sheet.col_values(3)  # Assuming user answers are in the fifth column
 
 # Function to generate feedback with retry mechanism
 def generate_feedback(prompt, retries=2, delay=60):
@@ -55,28 +56,20 @@ for i in range(1, len(user_answers)):  # Assuming the first row is the header
     user_answer = user_answers[i]
     correct_answer = correct_answers[i]
 
-    prompt = (
-        f"Question: {question}\n"
-        f"User Answer: {user_answer}\n"
-        f"Correct Answer: {correct_answer}\n\n"
-        "Evaluate the user's answer compared to the correct answer and give a score out of 10. Strictly follow these guidelines:\n"
-        "1. For a fully correct answer (all key parts are there), give a score of 7 to 10.\n"
-        "2. For a mostly correct answer with small mistakes or missing parts, give a score of 5 to 6.\n"
-        "3. For a partially correct answer (many key parts missing), give a score of 3 to 5.\n"
-        "4. For an answer that's mostly wrong but has some correct parts, give a score of 1 to 2.\n"
-        "5. For a completely wrong answer, give a score of 0 to 1.\n"
-        "Provide detailed feedback and suggestions for improvement, explaining why you gave the score."
-    )
-
-
+    if 'program' in question.lower():
+        prompt = coding_prompt_template.format(question=question, user_answer=user_answer, correct_answer=correct_answer)
+    else:
+        prompt = theory_prompt_template.format(question=question, user_answer=user_answer, correct_answer=correct_answer)
 
     feedback = generate_feedback(prompt)
     if feedback:
         score = extract_score(feedback)
        
-        sheet.update_cell(i + 1, 7, score)  # Assuming scores go in the 4th column
-        sheet.update_cell(i + 1, 8, feedback)  # Assuming feedback goes in the 5th column
+        sheet.update_cell(i + 1, 9, score)  # Assuming scores go in the 7th column
+        sheet.update_cell(i + 1, 10, feedback)  # Assuming feedback goes in the 8th column
 
         print(f"Question: {question}")
         print(f"Score: {score}")
         print(f"Feedback: {feedback}\n")
+
+        print("-----------------------------------------------------------------------------------")
