@@ -1,63 +1,90 @@
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+import pandas as pd
 import numpy as np
+from openpyxl import load_workbook
+from datetime import datetime
 
-# Define the scope
-scope = ["https://spreadsheets.google.com/feeds", 'https://www.googleapis.com/auth/spreadsheets',
-         "https://www.googleapis.com/auth/drive.file", "https://www.googleapis.com/auth/drive"]
+# Load the Excel file
+file_path = r'C:\Users\pavan\Desktop\projects\gen ai\model-experiments\CSV FILES\accuracy_report.xlsx'
+xls = pd.ExcelFile(file_path)
 
-# Add credentials to the account
-creds = ServiceAccountCredentials.from_json_keyfile_name('C:/Users/pavan/Downloads/warm-torus-427502-j7-3344d35efeec.json', scope)
+# Read the sheets into DataFrames
+sheet1 = pd.read_excel(xls, sheet_name='Sheet1')
+sheet2 = pd.read_excel(xls, sheet_name='Sheet2')
+print(sheet1.shape)
 
-# Authorize the client sheet 
-client = gspread.authorize(creds)
+def calculate_scores_and_out_of_range(sheet, column_index, min_value, max_value, start_row):
+    # Get values in the specified column starting from start_row (zero-based indexing)
+    column_values = sheet.iloc[start_row:, column_index]
 
-# Get the sheet
-sheet = client.open('Java').sheet1
-
-def calculate_ratio_for_column(sheet, column_index, min_value, max_value):
-    # Get all values in the specified column (zero-based indexing)
-    column_values = sheet.col_values(column_index + 1)
-    
     # Convert to float and filter out non-numeric values
-    filtered_values = []
-    for value in column_values:
-        try:
-            filtered_values.append(float(value))
-        except ValueError:
-            continue
+    filtered_values = pd.to_numeric(column_values, errors='coerce').dropna()
 
-    # Convert list to numpy array for easier computation
-    values = np.array(filtered_values)
+    # Calculate the number of values between min_value and max_value
+    count_in_range = ((filtered_values >= min_value) & (filtered_values <= max_value)).sum()
 
-    # Count the values between min_value and max_value
-    count_in_range = np.sum((values >= min_value) & (values <= max_value))
+    # Identify row numbers with values out of the specified range
+    out_of_range_rows = column_values[(column_values < min_value) | (column_values > max_value)].index + 1  # +1 to match Excel row indexing
 
     # Calculate the total number of values
-    total_values = values.size
+    total_values = filtered_values.size
 
     # Calculate the ratio
     ratio = count_in_range / total_values if total_values != 0 else 0
 
-    return count_in_range, total_values, ratio
+    return count_in_range, out_of_range_rows, ratio
 
 def main():
-    # Calculate for partial column (index 5), values between 4 and 6
-    count_partial, total_partial, ratio_partial = calculate_ratio_for_column(sheet, 8, 4, 7)
-    print(f'For Partial Correct: Score between 4 and 7: {count_partial}, Total number of values: {total_partial}, Accuracy: {ratio_partial}')
+    columns_and_ranges = [
+        (1, 7, 10),  # Column 2 (Excel-based), values between 7 and 10
+        (3, 4, 7),   # Column 4 (Excel-based), values between 4 and 7
+        (5, 0, 4)    # Column 6 (Excel-based), values between 0 and 4
+    ]
 
-    # Calculate for wrong column (index 7), values between 0 and 3
-    count_wrong, total_wrong, ratio_wrong = calculate_ratio_for_column(sheet, 10, 0, 4)
-    print(f'For Wrong answer: Score between 0 and 4: {count_wrong}, Total number of values: {total_wrong}, Accuracy: {ratio_wrong}')
+    update_data = {}
+    ratios = []
 
+    # Load the workbook and select the sheet to update
+    wb = load_workbook(file_path)
+    ws = wb['Sheet1']
 
-    count_correct, total_correct, ratio_correct = calculate_ratio_for_column(sheet, 6, 7, 10)
-    print(f'For Correct answer: Score between 7 and 10: {count_correct}, Total number of values: {total_correct}, Accuracy: {ratio_correct}')
+    # Find the next available row in Sheet1
+    next_row = ws.max_row+1
+
+    for i, (col_index, min_val, max_val) in enumerate(columns_and_ranges):
+        count_in_range, out_of_range_rows, ratio = calculate_scores_and_out_of_range(sheet2, col_index, min_val, max_val, 3)
+        print(f'Column {col_index + 1} (Values between {min_val} and {max_val}):')
+        print(f'  Number of scores in range: {count_in_range}')
+        print(f'  Rows with values out of range: {out_of_range_rows.tolist()}')
+        print(f'  Ratio: {ratio}')
+
+        # Determine the correct columns to update based on iteration
+        ratio_column = 3 + (i * 2)
+        out_of_range_column = 4 + (i * 2)
+
+        # Update the dictionary for each set of results
+        update_data[(next_row, ratio_column)] = ratio  # Next available row, ratio column
+        update_data[(next_row, out_of_range_column)] = ','.join(map(str, out_of_range_rows.tolist()))  # Next available row, out-of-range rows column
+
+        # Collect the ratio for average calculation
+        ratios.append(ratio)
 
     # Calculate the average ratio
-    ratios = [ratio_partial, ratio_wrong, ratio_correct]
     average_ratio = np.mean(ratios)
-    print(f'Average Accuracy: {average_ratio}')
+
+    # Update cells in Sheet1
+    for (row, col), value in update_data.items():
+        cell = ws.cell(row=row, column=col)  # No need to adjust since next_row is already correct
+        cell.value = value
+
+    # Add the current timestamp to column 2, next available row
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    ws.cell(row=next_row, column=2).value = timestamp
+
+    # Insert the average ratio into the 9th column of the next available row
+    ws.cell(row=next_row, column=9).value = average_ratio
+
+    # Save the updated workbook
+    wb.save(file_path)
 
 if __name__ == "__main__":
     main()
