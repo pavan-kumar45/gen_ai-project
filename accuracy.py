@@ -2,7 +2,10 @@ import pandas as pd
 import numpy as np
 from openpyxl import load_workbook
 from datetime import datetime
+from config import (
 
+  GEMINI_TEST,OPENAI_TEST
+)
 # Load the Excel file
 file_path = r'C:\Users\pavan\Desktop\projects\gen ai\model-experiments\CSV FILES\accuracy_report.xlsx'
 xls = pd.ExcelFile(file_path)
@@ -23,7 +26,7 @@ def calculate_scores_and_out_of_range(sheet, column_index, min_value, max_value,
     count_in_range = ((filtered_values >= min_value) & (filtered_values <= max_value)).sum()
 
     # Identify row numbers with values out of the specified range
-    out_of_range_rows = column_values[(column_values < min_value) | (column_values > max_value)].index + 1  # +1 to match Excel row indexing
+    out_of_range_rows = column_values[(column_values < min_value) | (column_values > max_value)].index + 2  # +1 to match Excel row indexing
 
     # Calculate the total number of values
     total_values = filtered_values.size
@@ -34,10 +37,20 @@ def calculate_scores_and_out_of_range(sheet, column_index, min_value, max_value,
     return count_in_range, out_of_range_rows, ratio
 
 def main():
+
+    if GEMINI_TEST==True:
+        col1=1
+        col2=3
+        col3=5
+
+    if OPENAI_TEST==True:
+        col1=7
+        col2=9
+        col3=11
     columns_and_ranges = [
-        (1, 7, 10),  # Column 2 (Excel-based), values between 7 and 10
-        (3, 4, 7),   # Column 4 (Excel-based), values between 4 and 7
-        (5, 0, 4)    # Column 6 (Excel-based), values between 0 and 4
+        (col1, 7, 10),  # Column 2 (Excel-based), values between 7 and 10
+        (col2, 4, 7),   # Column 4 (Excel-based), values between 4 and 7
+        (col3, 0, 4)    # Column 6 (Excel-based), values between 0 and 4
     ]
 
     update_data = {}
